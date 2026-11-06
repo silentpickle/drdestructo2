@@ -13,7 +13,7 @@ struct BitmapParams
 	bool memory;
 };
 
-class BitmapManager : public ResourceManager< IImage*, BitmapParams, 0, ImageHandle >
+class BitmapManager : public ResourceManager< IImage*, BitmapParams, nullptr, ImageHandle >
 {
 	std::map<intptr_t, std::string> m_contexts;
 public:

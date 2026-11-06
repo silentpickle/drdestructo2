@@ -13,7 +13,7 @@ typedef Handle<Text> TextHandle;
 
 struct Empty{};
 
-class TextManager : public ResourceManager< Text*, Empty, 0, TextHandle >
+class TextManager : public ResourceManager< Text*, Empty, nullptr, TextHandle >
 {
 public:
 	Text *Create( const Empty & params ){ return 0; }

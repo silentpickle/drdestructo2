@@ -1,4 +1,7 @@
 #include "stdafx.h"
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
 #include "Engine/ISystem.h"
 #include "PlayerProfile.h"
 
@@ -96,7 +99,12 @@ void PlayerProfile::Save()
 		path += "/";
 	path += "player.xml";
 
+#ifdef __EMSCRIPTEN__
+    if (doc.SaveFile(path.c_str()))
+        EM_ASM({ Module.saveProgress(); });
+#else
 	doc.SaveFile( path.c_str() );
+#endif
 }
 
 void PlayerProfile::ResetGameStats()

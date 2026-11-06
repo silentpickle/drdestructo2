@@ -20,6 +20,9 @@
 #endif
 
 #include <cctype>
+#ifdef __EMSCRIPTEN__
+#include <SDL2/SDL.h>
+#endif
 
 #ifdef USE_BREAKPAD
   // Callback for sending reports
@@ -73,6 +76,9 @@ int main(int argc, char **argv)
 	google_breakpad::ExceptionHandler *pHandler = new google_breakpad::ExceptionHandler( L"dumps\\", DmpFilter, DmpCallback, 0, google_breakpad::ExceptionHandler::HANDLER_ALL, MiniDumpNormal, L"", 0 );
 #endif
 
+#ifdef __EMSCRIPTEN__
+	SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
+#endif
 	srand( time( 0 ) );
 
 	ISystem & sys = GetSystem();
@@ -119,6 +125,14 @@ int main(int argc, char **argv)
 
 	int renderType = sys.GetConfigValue_Int( "DD_Graphics", "RenderMode" );
 	ERenderType realType = renderType == 0 ? RENDERTYPE_DIRECT3D : RENDERTYPE_OPENGL;
+#ifdef __EMSCRIPTEN__
+    if (!render.Init(RENDERTYPE_OPENGL, SCREEN_W, SCREEN_H, 32, false, true, "Data/Fonts/BalsamiqSans-Regular.ttf"))
+        return -1;
+    render.SetGlobalScaling(SCALING_KEEP_ASPECT, SCREEN_W, SCREEN_H);
+    if (!GetInput().Init(true, true, false, false))
+        return -1;
+    (new Game())->Run();
+#else
 	if ( !render.Init( realType, cfgW, cfgH, cfgB, fullscreen, vsync, "Data/Fonts/111-catatan-perjalanan.otf" ) )
 		return -1;
 	render.SetGlobalScaling( (EScalingMode)scaling, SCREEN_W, SCREEN_H );
@@ -132,7 +146,8 @@ int main(int argc, char **argv)
 	Game game;
 	game.Run();
 
-	render.Clear();	
+	render.Clear();
+#endif
 
 	return 0;
 }

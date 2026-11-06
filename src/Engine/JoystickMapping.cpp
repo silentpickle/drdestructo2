@@ -188,6 +188,7 @@ const JoystickMapping & GetJoystickMapping( int joystickIndex )
 
 	Mappings::const_iterator iter = mappings.end();
 
+#ifndef __EMSCRIPTEN__
 	ALLEGRO_JOYSTICK *pJoy = al_get_joystick( joystickIndex );	
 	if ( pJoy )
 	{
@@ -195,6 +196,8 @@ const JoystickMapping & GetJoystickMapping( int joystickIndex )
 		if ( guid )
 			iter = mappings.find( guid );
 	}
+
+#endif
 
 	if ( iter == mappings.end() )
 	{

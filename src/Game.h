@@ -90,7 +90,7 @@ static const int INITIAL_DAYS = 7;
 class Game : public IGameContext, public InputHandler
 {
 	  // List of all known game states
-	typedef boost::scoped_ptr<BaseGameState> StatePtr;
+	typedef std::unique_ptr<BaseGameState> StatePtr;
 	StatePtr m_gameStates[ MAX_GAME_STATES ];
 
 	  // States "stack"
@@ -142,6 +142,11 @@ class Game : public IGameContext, public InputHandler
 	int m_daysLeft;
 
 	bool m_showFPS;
+	double m_timePrev = 0;
+	float m_fpsCounterDelta = 0;
+	int m_fps = 0;
+	int m_lastFps = 0;
+	bool Frame();
 
 	bool m_godMode;
 	bool m_debugAchMode;
@@ -228,4 +233,7 @@ class Game : public IGameContext, public InputHandler
 public:
 	Game();
 	void Run();
+#ifdef __EMSCRIPTEN__
+	static void WebFrame(void *game);
+#endif
 };

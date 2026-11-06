@@ -28,6 +28,11 @@
 
 #include "AICommands.h"
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+void ResetWebKeyboard();
+#endif
+
 #ifndef WIN32
     #include <sys/time.h>
     #define _sleep sleep
@@ -119,7 +124,6 @@ Game::Game()
 	printf("Game started\n");
 	m_stop = false;
 	m_forcedPause = false;
-	memset( m_gameStates, 0, sizeof(m_gameStates) );
 
 	m_showFPS = false;
 	m_frameLimit = true;
@@ -173,308 +177,251 @@ void Game::Run()
 	LoadAI();	
 	m_objectStorage.GetMusic().Load( "Data/Music/music.xml" );
 
-	IInput & input = GetInput();
-	IRender & render = GetRender();
-	ISystem & system = GetSystem();
-
-	// Testing code for graphics
-
-	//GraphicCompID id =  CreateGraphicComponent( GameObjectID(0), "prop_plane_green" );
-	//PhysicCompID pid =  CreatePhysicComponent( GameObjectID(0), "prop_plane" );
-	//GraphicComponent *pC = m_objectStorage.GetGraphicComponent( id );
-	//PhysicComponent *pPC = m_objectStorage.GetPhysicComponent( pid );
-	//pC->m_currentAnim = 0;
-	//pC->m_nextAnim = 0;
-	//pC->m_x = 100; pC->m_y = 100;
-	//pC->m_angle = 0;
-	//pPC->m_x = 100; pPC->m_y = 100;
-	//double t = 0.0f;
-	//while( true )
-	//{
-	//	render.ClearToColor( Color(255,255,255) );
-	//	m_graphicProcessor.Render( render, *pC );	
-	//	m_graphicProcessor.Update( 0.01, *pC );
-	//	pC->m_y = 100 + sinf( t * ALLEGRO_PI * 2.0f ) * 100;
-	//	input.Update( 100 );
-	//	
-	//	InputEvent e;
-	//	while( true )
-	//	{
-	//		e = input.GetEvent();
-	//		if ( e.m_type == InputEvent::EV_INVALID )
-	//			break;
-	//		if ( e.m_type == InputEvent::EV_KEYBOARD && e.m_keyboardEvent.m_type == KeyboardEvent::KBD_KEY_UP && e.m_keyboardEvent.m_keycode == ALLEGRO_KEY_ENTER )
-	//			pC->m_currentAnim++;
-	//		input.PopEvent();
-	//	}
-	//	//pC->m_animations[ pC->m_currentAnim ].m_currentFrame = 1;
-	//	t += 0.001;
-	//	//for ( int i = 0; i < pPC->m_collisionSpheres.size(); ++i )
-	//	//{
-	//	//	const int x = 100 + pPC->m_collisionSpheres[ i ].m_dx;
-	//	//	const int y = 100 + pPC->m_collisionSpheres[ i ].m_dy;
-	//	//	const int r = pPC->m_collisionSpheres[ i ].m_r;
-	//	//	render.DrawCircleFill( x, y, r, Color(255,0,255) );
-	//	//}
-	//	render.Flip();
-	//	//input.WaitAnyKey();
-	//}
-	//
-
-	// Testing code for quickly viewing PBP texts
-
-	//class FileIterator : public IFileIterator
-	//{
-	//	PlayByPlay pbp;
-	//public:
-	//	FileIterator()
-	//	{
-	//		pbp.Init( GetRender() );
-	//	}
-
-	//	virtual void operator()( const char *filename, bool isDir )
-	//	{
-	//		std::string n = "Data/Texts/";
-	//		n += filename;
-	//		n +=".txt";
-
-	//		std::vector<char> data;
-	//		GetSystem().LoadFile( n.c_str(), data );
-	//		UTFString str;
-	//		str->Assign( &data[0], data.size() );
-	//		pbp.SetDebugText( str );
-	//		pbp.DebugRender();
-	//		GetRender().DrawText( 0, 0, Color(255,255,255), 20, "%s", filename );
-	//		GetRender().Flip();
-	//		GetInput().WaitAnyKey();		
-	//	}
-	//}fileit;
-
-	//system.IterateFiles( "Data/Texts/", "level*pbp.txt", false, false, fileit );
-
-	double timePrev = system.GetTime();
-	double timeNow = timePrev;
-
-	float fpsCounterDelta = 0.0f;
-	int fps = 0;
-	int lastFps = 0;
-
-	float timeProf = system.GetTime();
-#ifdef PROFILE
-float prof1, prof2, prof3, prof4, prof5, prof6;
-float prof31, prof32, prof33, prof34, prof35, prof36;
-#define PROF(x) {float timeProfNow = system.GetTime(); prof##x = timeProfNow - timeProf; timeProf = timeProfNow;}
+    m_timePrev = GetSystem().GetTime();
+#ifdef __EMSCRIPTEN__
+    emscripten_set_main_loop_arg(WebFrame, this, 0, false);
 #else
-	#define PROF(x)
+    while (Frame()) {}
 #endif
-	//Profiler & profiler = GetProfiler();
-	
-	while( !m_stop )
+}
+
+#ifdef __EMSCRIPTEN__
+namespace
+{
+bool browserPaused = false;
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE void dd2_set_paused(int paused)
+{
+    browserPaused = paused != 0;
+    ResetWebKeyboard();
+}
+
+void Game::WebFrame(void *game)
+{
+    auto & self = *static_cast<Game *>(game);
+    if (browserPaused)
+    {
+        self.m_timePrev = GetSystem().GetTime();
+        return;
+    }
+    if (!self.Frame())
+    {
+        emscripten_cancel_main_loop();
+        delete &self;
+        EM_ASM({ Module.onGameExit(); });
+    }
+}
+#endif
+
+bool Game::Frame()
+{
+    if (m_stop)
+        return false;
+
+    IInput & input = GetInput();
+    IRender & render = GetRender();
+    ISystem & system = GetSystem();
+    const double timeNow = system.GetTime();
+    float dt = timeNow - m_timePrev;
+    m_timePrev = timeNow;
+#ifdef __EMSCRIPTEN__
+    dt = std::min(dt, 0.05f);
+#endif
+
+	if ( !m_forcedPause )
 	{
-timeProf = system.GetTime();
-		//------------ Timers & FPS --------------------
-
-		//profiler.Start();
-		timeNow = system.GetTime();
-		float dt = timeNow - timePrev;
-		timePrev = timeNow;
-#ifdef PROFILE
-		if ( dt > 0.02f )
+		m_fpsCounterDelta += dt;
+		if ( m_fpsCounterDelta >= 1.0f )
 		{
-			printf("%f\n", dt);
-			printf("prof1 %f\n", prof1);
-			printf("prof2 %f\n", prof2);
-			printf("prof3 %f\n", prof3);
-				printf("prof31 %f\n", prof31);
-				printf("prof32 %f\n", prof32);
-				printf("prof33 %f\n", prof33);
-				printf("prof34 %f\n", prof34);
-				printf("prof35 %f\n", prof35);
-				printf("prof36 %f\n", prof36);
-			printf("prof4 %f\n", prof4);
-			printf("prof5 %f\n", prof5);
-			printf("prof6 %f\n", prof6);
+			m_fpsCounterDelta -= 1.0f;
+			m_lastFps = m_fps;
+			m_fps = 0;
 		}
+
+		//------------ Input --------------------
+
+		{
+		input.Update( dt * 1000 );
+
+		InputHandler::ProcessInput( input );
+
+		for( StateVector::reverse_iterator iter = m_currentStates.rbegin(); iter != m_currentStates.rend(); ++iter )
+			(*iter)->ProcessInput( input );
+
+		input.Clear();
+		}
+#ifdef __EMSCRIPTEN__
+		// WebGL presents the canvas after the frame callback returns.
+		al_clear_to_color(al_map_rgb(0, 0, 0));
 #endif
-		if ( !m_forcedPause )
+		//------------ Render --------------------
 		{
-			fpsCounterDelta += dt;
-			if ( fpsCounterDelta >= 1.0f )
-			{
-				fpsCounterDelta -= 1.0f;
-				lastFps = fps;
-				fps = 0;
-			}
 
-	PROF(1);
-			//------------ Input --------------------
-		
-			{
-			input.Update( dt * 1000 );
+		for( StateVector::iterator iter = m_currentStates.begin(); iter != m_currentStates.end(); ++iter )
+			(*iter)->RenderBefore( render, *this );
+		GraphicsContainer & graphics = m_objectStorage.GetGraphics();
+		const GraphicsContainer::RenderLayerMap & layers = graphics.GetLayers();
 
-			InputHandler::ProcessInput( input );
-
-			for( StateVector::reverse_iterator iter = m_currentStates.rbegin(); iter != m_currentStates.rend(); ++iter )
-				(*iter)->ProcessInput( input );
-		
-			input.Clear();
-			}
-	PROF(2);
-			//------------ Render --------------------		
+		for ( GraphicsContainer::RenderLayerMap::const_iterator layerIter = layers.begin(); layerIter != layers.end(); ++layerIter )
+		{
+			for ( GraphicsContainer::GraphCompIDVector::const_iterator idIter = layerIter->second.begin(); idIter != layerIter->second.end(); ++idIter )
 			{
 
-			for( StateVector::iterator iter = m_currentStates.begin(); iter != m_currentStates.end(); ++iter )
-				(*iter)->RenderBefore( render, *this );
-	PROF(31);
-			GraphicsContainer & graphics = m_objectStorage.GetGraphics();
-			const GraphicsContainer::RenderLayerMap & layers = graphics.GetLayers();
-
-			for ( GraphicsContainer::RenderLayerMap::const_iterator layerIter = layers.begin(); layerIter != layers.end(); ++layerIter )
-			{
-				for ( GraphicsContainer::GraphCompIDVector::const_iterator idIter = layerIter->second.begin(); idIter != layerIter->second.end(); ++idIter )
-				{
-				
-					if ( m_currentStates.back()->AllowGraphicsUpdate() )
-						m_graphicProcessor.Update( dt, *m_objectStorage.GetGraphicComponent( *idIter ) );
-					if ( m_currentStates.back()->AllowGraphicsRender() )
-						m_graphicProcessor.Render( render, *m_objectStorage.GetGraphicComponent( *idIter ) );
-				}
-			}
-	PROF(32);
-			ObjectsStorage::SoundsContainer & sounds = m_objectStorage.GetSounds();
-			for ( ObjectsStorage::SoundsContainer::Iterator iter = sounds.GetIterator(); !iter.AtEnd(); ++iter )
-			{
-				m_soundProcesor.Update( dt, **iter );
-			}
-			}
-	PROF(33);
-			//profiler.Mark( "Objects" );		
-			{
-			for( StateVector::iterator iter = m_currentStates.begin(); iter != m_currentStates.end(); ++iter )
-				(*iter)->RenderAfter( render, *this );
-	PROF(34);
-			for ( StateIDVector::iterator iter = m_removeStates.begin(); iter != m_removeStates.end(); ++iter )
-			{
-				while( !m_currentStates.empty() )		
-				{
-					const BaseGameState *pState = m_currentStates.back();
-					EGameState stateID = pState->GetType();
-					m_currentStates.back()->OnRemove( *this );
-					m_currentStates.pop_back();
-					if ( stateID == *iter )
-						break;
-				}
-			}
-			m_removeStates.clear();
-	PROF(35);
-			for ( StateIDVector::iterator iter = m_pushStates.begin(); iter != m_pushStates.end(); ++iter )
-			{
-				m_currentStates.push_back( m_gameStates[ (*iter) ].get() );
-				m_currentStates.back()->OnPush( *this );
-			}
-			m_pushStates.clear();
-
-			if ( m_currentStates.empty() )
-				break;
-
-			m_objectStorage.GetMusic().Update( dt );
-
-			if ( m_showFPS )
-				render.DrawText( 0, 0, Color(255,255,255), 12, "FPS: %i (%s)", lastFps, m_frameLimit ? "frame limit" : "no limit" );
-	PROF(36);
-	PROF(3);
-			//------------ Update --------------------
-
-			m_objectStorage.GetCollisions().Reset();
-
-			if ( m_currentStates.back()->AllowPhysicsUpdate() )
-			{
-				for ( CompList<PhysicComponent>::Iterator iter = m_objectStorage.GetPhysics().GetIterator(); !iter.AtEnd(); ++iter )
-					m_physicProcessor.Update( dt, **iter, m_objectStorage.GetCollisions() );
-
-				m_physicProcessor.CalculateCollisions( m_objectStorage.GetPhysics(), m_objectStorage.GetCollisions() );
-			}
-
-			if ( m_currentStates.back()->AllowAIUpdate() )
-			{
-				for ( CompList<GameObject>::Iterator iter = m_objectStorage.GetGameObjects().GetIterator(); !iter.AtEnd(); ++iter )
-				{
-					GameObject & object = **iter;
-					ControlComponent *pControls = m_objectStorage.GetControlComponent( object.GetControlComponent() );
-					if ( pControls && pControls->m_type == ControlComponent::TYPE_AI )
-						m_aiProcessor.Update( dt, *pControls, *this );
-				}
-			}
-
-			m_currentStates.back()->Update( dt, *this );
-
-			CreateObjects();
-			DestroyObjects();
-
-			m_objectStorage.Update();
+				if ( m_currentStates.back()->AllowGraphicsUpdate() )
+					m_graphicProcessor.Update( dt, *m_objectStorage.GetGraphicComponent( *idIter ) );
+				if ( m_currentStates.back()->AllowGraphicsRender() )
+					m_graphicProcessor.Render( render, *m_objectStorage.GetGraphicComponent( *idIter ) );
 			}
 		}
-		//------------ Flip & profiler --------------------
-PROF(4);
+		ObjectsStorage::SoundsContainer & sounds = m_objectStorage.GetSounds();
+		for ( ObjectsStorage::SoundsContainer::Iterator iter = sounds.GetIterator(); !iter.AtEnd(); ++iter )
 		{
-		//const int modified = GetBitmapManager().CountModified();
-		//render.DrawText( 0, 40, Color(255,255,255), 20, "Mod: %i", modified );
-		//render.DrawText( 0, 0, Color(255,255,255), 10, "CHEATING ENABLED. PRESS F2 TO WIN LEVEL, F3 TO TOGGLE GOD MODE (GOD MODE IS %s) F4 ALL ACHIEVS", m_godMode ? "on" : "off" );
-		render.ProcessEvents();
-		DisplayEvent dEv;
-		while( true )
+			m_soundProcesor.Update( dt, **iter );
+		}
+		}
 		{
-			dEv = render.GetEvent();
-			if ( dEv.m_type == DisplayEvent::DISPLAY_INVALID )
-				break;
-
-			switch( dEv.m_type )
+		for( StateVector::iterator iter = m_currentStates.begin(); iter != m_currentStates.end(); ++iter )
+			(*iter)->RenderAfter( render, *this );
+		for ( StateIDVector::iterator iter = m_removeStates.begin(); iter != m_removeStates.end(); ++iter )
+		{
+			while( !m_currentStates.empty() )
 			{
-				case DisplayEvent::DISPLAY_CLOSE:
-					m_stop = true;
-					break;
-
-				case DisplayEvent::DISPLAY_HALT_DRAWING:
-					al_acknowledge_drawing_halt( al_get_current_display() );
-				case DisplayEvent::DISPLAY_LOST:
-					m_forcedPause = true;
-					break;
-
-				case DisplayEvent::DISPLAY_RESUME_DRAWING:
-					al_acknowledge_drawing_resume( al_get_current_display() );
-					m_forcedPause = false;
-					break;
-
-				case DisplayEvent::DISPLAY_FOUND:
-					for( StateVector::iterator iter = m_currentStates.begin(); iter != m_currentStates.end(); ++iter )
-						(*iter)->OnDisplayFound(*this);
-					m_forcedPause = false;
+				const BaseGameState *pState = m_currentStates.back();
+				EGameState stateID = pState->GetType();
+				m_currentStates.back()->OnRemove( *this );
+				m_currentStates.pop_back();
+				if ( stateID == *iter )
 					break;
 			}
 		}
-
-		if ( !m_forcedPause )
-			render.Flip();
-		}
-PROF(5);
-		//------------ Sleep --------------------
-
-		timeNow = system.GetTime();
-
-		const bool vsync = system.HasConfigValue( "DD_Graphics", "VSync" ) ? system.GetConfigValue_Int( "DD_Graphics", "VSync" ) : false;
-		if ( !vsync || m_forcedPause )
+		m_removeStates.clear();
+		for ( StateIDVector::iterator iter = m_pushStates.begin(); iter != m_pushStates.end(); ++iter )
 		{
-			float cycleTime = timeNow - timePrev;
-			if ( cycleTime < 1 / 100.0f )
+			m_currentStates.push_back( m_gameStates[ (*iter) ].get() );
+			m_currentStates.back()->OnPush( *this );
+		}
+		m_pushStates.clear();
+
+		if ( m_currentStates.empty() )
+			return false;
+
+		m_objectStorage.GetMusic().Update( dt );
+
+		if ( m_showFPS )
+			render.DrawText( 0, 0, Color(255,255,255), 12, "FPS: %i (%s)", m_lastFps, m_frameLimit ? "frame limit" : "no limit" );
+		//------------ Update --------------------
+
+		m_objectStorage.GetCollisions().Reset();
+
+		if ( m_currentStates.back()->AllowPhysicsUpdate() )
+		{
+			for ( CompList<PhysicComponent>::Iterator iter = m_objectStorage.GetPhysics().GetIterator(); !iter.AtEnd(); ++iter )
+				m_physicProcessor.Update( dt, **iter, m_objectStorage.GetCollisions() );
+
+			m_physicProcessor.CalculateCollisions( m_objectStorage.GetPhysics(), m_objectStorage.GetCollisions() );
+		}
+
+		if ( m_currentStates.back()->AllowAIUpdate() )
+		{
+			for ( CompList<GameObject>::Iterator iter = m_objectStorage.GetGameObjects().GetIterator(); !iter.AtEnd(); ++iter )
 			{
-				if ( m_frameLimit )
-					GetSystem().Sleep( (1.0f / 100.0f - cycleTime) );
+				GameObject & object = **iter;
+				ControlComponent *pControls = m_objectStorage.GetControlComponent( object.GetControlComponent() );
+				if ( pControls && pControls->m_type == ControlComponent::TYPE_AI )
+					m_aiProcessor.Update( dt, *pControls, *this );
 			}
 		}
 
-		++fps;
-PROF(6);
+		m_currentStates.back()->Update( dt, *this );
+
+		CreateObjects();
+		DestroyObjects();
+
+		m_objectStorage.Update();
+		}
 	}
+#if defined(__EMSCRIPTEN__) && defined(_DEBUG)
+    if (EM_ASM_INT({ return !!Module.qa; }))
+    {
+        const auto & player = m_objectStorage.GetPlayer();
+        EM_ASM({
+            Module.qa.frame = ({state:$0,level:$1,damage:$2,score:$3,lives:$4,
+                hits:$5,targetHits:$6,shots:$7,objects:[]});
+        }, m_currentStates.empty() ? -1 : m_currentStates.back()->GetType(),
+            GetCurrentLevel(), m_director.GetCompletionPercent(), player.m_score,
+            player.m_lives, m_playerProfile.m_levelHits, m_playerProfile.m_levelTargetHits,
+            m_playerProfile.m_levelShotsFired);
+        auto & objects = m_objectStorage.GetGameObjects();
+        for (auto it = objects.GetIterator(); !it.AtEnd(); ++it)
+        {
+            const auto * object = *it;
+            const auto * phy = m_objectStorage.GetPhysicComponent(object->GetPhysicComponent());
+            const auto * mech = m_objectStorage.GetMechanicComponent(object->GetMechanicComponent());
+            const auto * ctrl = m_objectStorage.GetControlComponent(object->GetControlComponent());
+            if (!phy || !mech) continue;
+            EM_ASM({
+                Module.qa.frame.objects.push({type:$0,x:$1,y:$2,a:$3,vx:$4,vy:$5,
+                    speed:$6,turn:$7,ammo:$8,ai:UTF8ToString($9),ctrl:$10});
+            }, mech->m_type, phy->m_x, phy->m_y, phy->m_angle, phy->m_speedX, phy->m_speedY,
+                phy->m_speed, phy->m_turnSpeed, mech->m_weapons[1].m_currentAmmo,
+                ctrl ? ctrl->m_function.c_str() : "", ctrl ? ctrl->m_controls : 0);
+        }
+    }
+#endif
+
+	//------------ Flip & profiler --------------------
+	{
+	//const int modified = GetBitmapManager().CountModified();
+	//render.DrawText( 0, 40, Color(255,255,255), 20, "Mod: %i", modified );
+	//render.DrawText( 0, 0, Color(255,255,255), 10, "CHEATING ENABLED. PRESS F2 TO WIN LEVEL, F3 TO TOGGLE GOD MODE (GOD MODE IS %s) F4 ALL ACHIEVS", m_godMode ? "on" : "off" );
+	render.ProcessEvents();
+	DisplayEvent dEv;
+	while( true )
+	{
+		dEv = render.GetEvent();
+		if ( dEv.m_type == DisplayEvent::DISPLAY_INVALID )
+			break;
+
+		switch( dEv.m_type )
+		{
+			case DisplayEvent::DISPLAY_CLOSE:
+				m_stop = true;
+				break;
+
+			case DisplayEvent::DISPLAY_HALT_DRAWING:
+				al_acknowledge_drawing_halt( al_get_current_display() );
+			case DisplayEvent::DISPLAY_LOST:
+				m_forcedPause = true;
+				break;
+
+			case DisplayEvent::DISPLAY_RESUME_DRAWING:
+				al_acknowledge_drawing_resume( al_get_current_display() );
+				m_forcedPause = false;
+				break;
+
+			case DisplayEvent::DISPLAY_FOUND:
+				for( StateVector::iterator iter = m_currentStates.begin(); iter != m_currentStates.end(); ++iter )
+					(*iter)->OnDisplayFound(*this);
+				m_forcedPause = false;
+				break;
+		}
+	}
+
+	if ( !m_forcedPause )
+		render.Flip();
+	}
+
+#ifndef __EMSCRIPTEN__
+    const bool vsync = system.HasConfigValue("DD_Graphics", "VSync") &&
+        system.GetConfigValue_Int("DD_Graphics", "VSync");
+    const double cycleTime = system.GetTime() - timeNow;
+    if ((!vsync || m_forcedPause) && m_frameLimit && cycleTime < 0.01)
+        system.Sleep(0.01 - cycleTime);
+#endif
+
+    ++m_fps;
+    return !m_stop;
 }
 
 void Game::PushState( EGameState state )
@@ -529,7 +476,7 @@ void Game::InitObject( GameObject & object, const SGameObjectProto & proto, cons
 		{
 			pCtrl->m_aiData.m_x = data.x;
 			pCtrl->m_aiData.m_y = data.y;
-			pCtrl->m_pState = GetAI().CreateAIState();
+			pCtrl->m_pState.reset(GetAI().CreateAIState());
 			pCtrl->m_function = data.ai;
 		}
 	}

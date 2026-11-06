@@ -1,11 +1,7 @@
 #pragma once
 
   // Generic resource manager
-#ifdef WIN32
-template< typename TResource, typename TResourceParams, const TResource TInvalid, typename THandle >
-#else
-template< typename TResource, typename TResourceParams, int TInvalid, typename THandle >
-#endif
+template< typename TResource, typename TResourceParams, TResource TInvalid, typename THandle >
 class ResourceManager
 {
 protected:

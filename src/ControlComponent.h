@@ -28,38 +28,31 @@ public:
 		TYPE_AI,
 	};
 
-	ControlComponent()
-	{}
+	ControlComponent() = default;
 
 	ControlComponent( const ControlCompID & id )
 		: SubComponent<ControlComponent, GameObject>( id )
-		, m_pCurrentTrigger( 0 )
-		, m_direction( 1 )
-		, m_pState( 0 )
 	{}
 
 	  // Type
-	EType m_type;
+	EType m_type = TYPE_PLAYER;
 	  // Mask of control flags
-	int m_controls;
+	int m_controls = 0;
 	  // See EDirection
-	int m_direction;
+	int m_direction = 1;
 
 	  // AI Lua function to be run at the each frame
 	std::string m_function;
 
 	  // State that is used to run m_function. Actually, just a Lua state hidden begind interface
-	IAIState *m_pState;
+	std::unique_ptr<IAIState> m_pState;
 	  // Current trigger. Until it fires, m_function would not be run
-	IAITrigger *m_pCurrentTrigger;
+	std::unique_ptr<IAITrigger> m_pCurrentTrigger;
       // Data from other components for AI to use
-	SAIData m_aiData;
+	SAIData m_aiData{};
 
 	void SetTrigger( IAITrigger *pTrigger )
 	{
-		if ( m_pCurrentTrigger )
-			delete m_pCurrentTrigger;
-
-		m_pCurrentTrigger = pTrigger;
+		m_pCurrentTrigger.reset(pTrigger);
 	}
 };

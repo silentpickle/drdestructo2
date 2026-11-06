@@ -645,7 +645,7 @@ void GameStateLevel::ControlsToMechanic( GameObject *pObject,IGameContext & cont
 				{
 					const float passed = pMechComp->m_weapons[0].m_cooldown - pMechComp->m_weapons[0].m_currentCooldown;
 					pMechComp->m_weapons[0].m_currentCooldown = 1 / 20.0f - passed;
-					if ( passed > pMechComp->m_weapons[0].m_currentCooldown < 0 )
+					if ( pMechComp->m_weapons[0].m_currentCooldown < 0 )
 						pMechComp->m_weapons[0].m_currentCooldown = 0;
 				}
 
@@ -993,7 +993,7 @@ void GameStateLevel::Update( float dt, IGameContext & context )
 	if ( m_fadeTimer > 0.0f )
 	{
 		m_fadeTimer -= dt;
-		if ( m_fadeTimer < 0 )
+		if ( m_fadeTimer <= 0 )
 		{
 			m_fade = false;
 			m_fadeTimer = 0;
@@ -1008,7 +1008,7 @@ void GameStateLevel::Update( float dt, IGameContext & context )
 			m_fade = true;
 			m_fadeTimer = m_gameOverTimer;
 		}
-		if ( m_gameOverTimer < 0 )
+		if ( m_gameOverTimer <= 0 )
 		{
 			m_gameOverTimer = 0;
 			if ( m_gameOverType == GAMEOVER_TYPE_LIVES )
@@ -1844,7 +1844,11 @@ void CombatUI::Render( const IGameContext & context, GameObjectID playerObjectID
 	const int ty = 726;
 
 	render.DrawText( 142, ty, numValue, fontSize, "%i", player.m_score );
+#ifdef __EMSCRIPTEN__
+    render.DrawText(321, ty + 3, label, 27, "Days:");
+#else
 	render.DrawText( 321, ty, label,    fontSize, "Days:" );
+#endif
 	render.DrawText( 400, ty, numValue, fontSize, "%i", context.GetDaysLeft() );
 	render.DrawText( 529, ty, numValue, fontSize, "%i", player.m_lives );
 

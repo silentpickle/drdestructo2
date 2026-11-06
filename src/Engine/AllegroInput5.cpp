@@ -2,6 +2,11 @@
 #include "AllegroInput5.h"
 #include "JoystickMapping.h"
 #include "LogCommon.h"
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#include "ISystem.h"
+#include "Common.h"
+#endif
 
 bool AllegroInput5::Init( bool keyboard, bool mouse, bool gamepad, bool touch )
 {
@@ -89,6 +94,88 @@ AllegroInput5::~AllegroInput5()
 {
 	al_destroy_event_queue( m_queue );
 }
+
+#ifdef __EMSCRIPTEN__
+void ResetWebKeyboard()
+{
+    static_cast<AllegroInput5 &>(GetInput()).ResetKeyboard();
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE void dd2_web_action(int action, int down)
+{
+    static_cast<AllegroInput5 &>(GetInput()).SetWebAction(action, down != 0);
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE void dd2_web_tap(float x, float y)
+{
+    static_cast<AllegroInput5 &>(GetInput()).QueueWebTap(x, y);
+}
+
+void AllegroInput5::QueueWebTap(float x, float y)
+{
+    if (x >= 0 && x < 1 && y >= 0 && y < 1)
+        m_webEvents.push_back(InputEvent::MouseEvent(MouseEvent::MOUSE_B1_UP,
+            static_cast<int>(x * SCREEN_W), static_cast<int>(y * SCREEN_H), 0));
+}
+
+void AllegroInput5::SetWebAction(int action, bool down)
+{
+    // These slots match the controls in the web page. Use the active in-game bindings.
+    static constexpr const char *bindings[] = {
+        "Kbd_Counter", "Kbd_Clock", "Kbd_Accel", "Kbd_Fire", "Kbd_Bomb", nullptr, nullptr
+    };
+    static constexpr int defaults[] = {
+        ALLEGRO_KEY_LEFT, ALLEGRO_KEY_RIGHT, ALLEGRO_KEY_UP, ALLEGRO_KEY_Q, ALLEGRO_KEY_A,
+        ALLEGRO_KEY_ENTER, ALLEGRO_KEY_ESCAPE
+    };
+    if (action < 0 || static_cast<size_t>(action) >= m_webKeys.size())
+        return;
+
+    int &key = m_webKeys[action];
+    if (down == (key != 0))
+        return;
+
+    if (down)
+    {
+        key = bindings[action] ? GetSystem().GetConfigValue_Int("DD_Controls", bindings[action]) : 0;
+        if (key <= 0 || key >= ALLEGRO_KEY_MAX)
+            key = defaults[action];
+    }
+    m_webEvents.push_back(InputEvent::KeyboardEvent(
+        down ? KeyboardEvent::KBD_KEY_DOWN : KeyboardEvent::KBD_KEY_UP, key, 0, 0));
+    if (!down)
+        key = 0;
+}
+
+void AllegroInput5::UpdateWebActions()
+{
+    for (const auto &event : m_webEvents)
+    {
+        AddEvent(event);
+        // A quick tap can start and end between frames. Apply it for one frame.
+        if (event.m_type == InputEvent::EV_KEYBOARD &&
+            event.m_keyboardEvent.m_type == KeyboardEvent::KBD_KEY_DOWN &&
+            std::find(m_webKeys.begin(), m_webKeys.end(), event.m_keyboardEvent.m_keycode) == m_webKeys.end())
+            AddEvent(InputEvent::KeyboardEvent(
+                KeyboardEvent::KBD_KEY_PRESSED, event.m_keyboardEvent.m_keycode, 0, 0));
+    }
+    m_webEvents.clear();
+    for (const int key : m_webKeys)
+        if (key)
+            AddEvent(InputEvent::KeyboardEvent(KeyboardEvent::KBD_KEY_PRESSED, key, 0, 0));
+}
+
+void AllegroInput5::ResetKeyboard()
+{
+    al_clear_keyboard_state(al_get_current_display());
+    al_flush_event_queue(m_queue);
+    m_keyStates.reset();
+    m_webKeys.fill(0);
+    m_webEvents.clear();
+    m_repeatTimer = 0;
+    Clear();
+}
+#endif
 
 // Simulates behaviour of Allegro 4.x function readkey() for debugging purposes
 void AllegroInput5::WaitAnyKey()
@@ -300,6 +387,9 @@ void AllegroInput5::Update( int dt )
 			m_keyStates[ i ] = al_key_down( &state, i )  != 0;
 		}
 	}
+#ifdef __EMSCRIPTEN__
+	UpdateWebActions();
+#endif
 }
 
 InputEvent AllegroInput5::GetEvent()

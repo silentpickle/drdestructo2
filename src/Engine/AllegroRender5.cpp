@@ -25,7 +25,12 @@ AllegroImage5 *AllegroRender5::GetImage( ImageHandle handle )
 bool AllegroRender5::Init( ERenderType type, int w, int h, int bpp, bool fullscreen, bool vsync, const char *defaultFont )
 {
 	al_set_new_bitmap_flags(ALLEGRO_MIN_LINEAR | ALLEGRO_MAG_LINEAR | ALLEGRO_MIPMAP );
+#ifdef __EMSCRIPTEN__
+	// A lost WebGL context is handled by reloading the page. Avoid per-frame texture readbacks.
+	al_set_new_bitmap_flags(ALLEGRO_VIDEO_BITMAP | ALLEGRO_NO_PRESERVE_TEXTURE);
+#else
 	al_set_new_bitmap_flags( ALLEGRO_VIDEO_BITMAP );
+#endif
 	al_set_new_display_option( ALLEGRO_VSYNC, vsync ? 1 : 2, ALLEGRO_SUGGEST );
 #ifdef ALLEGRO_IPHONE
 	al_set_new_display_option( ALLEGRO_SUPPORTED_ORIENTATIONS, ALLEGRO_DISPLAY_ORIENTATION_LANDSCAPE, ALLEGRO_REQUIRE );
@@ -37,6 +42,7 @@ bool AllegroRender5::Init( ERenderType type, int w, int h, int bpp, bool fullscr
 	#endif
 
 	  // Trying to create a window that's larget than desktop leads to a crash on older version of Windows, so try to correct that
+#ifndef __EMSCRIPTEN__
 	if ( !fullscreen )
 	{
 		ALLEGRO_MONITOR_INFO info;
@@ -50,6 +56,8 @@ bool AllegroRender5::Init( ERenderType type, int w, int h, int bpp, bool fullscr
 			h = deskH;
 		}
 	}
+
+#endif
 
 	m_display = al_create_display(w, h);
 
@@ -174,7 +182,9 @@ int AllegroRender5::GetHeight() const
 void AllegroRender5::Flip()
 {
 	al_flip_display();
+#ifndef __EMSCRIPTEN__
 	al_clear_to_color( al_map_rgb( 0, 0, 0 ) );
+#endif
 }
 
 ImageHandle AllegroRender5::LoadImage( const char *filename )

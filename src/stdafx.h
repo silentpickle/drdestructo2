@@ -6,6 +6,11 @@
 #include <algorithm>
 #include <set>
 #include <deque>
+#include <memory>
+#include <ctime>
+#include <cassert>
+#include <cstring>
+#include <cstdio>
 
 #undef int8_t
 #undef int_least8_t
@@ -34,9 +39,11 @@
 #undef uint_least64_t
 #undef uint_fast64_t
 
+#ifndef __EMSCRIPTEN__
 #include "boost/random/mersenne_twister.hpp"
 #include "boost/random/uniform_real.hpp"
 #include "boost/random/uniform_int.hpp"
+#endif
 //#ifndef ALLEGRO_ANDROID
 #ifndef HAS_STD_SHARED_PTR
 #include "boost/shared_ptr.hpp"
@@ -52,6 +59,9 @@
 #endif
 #include "tinyxml/tinyxml.h"
 
+#ifdef __EMSCRIPTEN__
+#include <lua.hpp>
+#else
 extern "C"
 {
 #include "lua/lua.h"
@@ -59,6 +69,7 @@ extern "C"
 # include "lualib.h"
 }
 #include "luabind/luabind.hpp"
+#endif
 
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_image.h>
@@ -69,8 +80,10 @@ extern "C"
 #include <allegro5/allegro_direct3d.h>
 #endif
 #include <allegro5/allegro_opengl.h>
+#ifndef __EMSCRIPTEN__
 #include <allegro5/allegro_audio.h>
 #include <allegro5/allegro_acodec.h>
+#endif
 
 #ifdef WIN32
 //#include <allegro5/allegro_native_dialog.h>

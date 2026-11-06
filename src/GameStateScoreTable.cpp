@@ -1,4 +1,7 @@
 #include "stdafx.h"
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
 #include "Common.h"
 #include "GameStateScoreTable.h"
 #include "ObjectsStorage.h"
@@ -81,7 +84,12 @@ bool GameStateScoreTable::SaveScores()
 		path += "/";
 	path += "scores.xml";
 
-	return doc.SaveFile( path.c_str() );
+	const bool saved = doc.SaveFile(path.c_str());
+#ifdef __EMSCRIPTEN__
+    if (saved)
+        EM_ASM({ Module.saveProgress(); });
+#endif
+    return saved;
 }
 
 void GameStateScoreTable::DrawScoreEntry( const SScoreEntry & e, int x, int y, int pos, const Color & color )

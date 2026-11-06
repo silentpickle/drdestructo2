@@ -158,7 +158,7 @@ void GameStateWin::Update( float dt, IGameContext & context )
 		m_skipTimer -= dt;
 	}
 
-	if ( m_fadeTimer < 0 )
+	if ( m_stage == STAGE_FADE && m_fadeTimer <= 0 )
 	{
 		context.RemoveState( GAMESTATE_LEVEL );
 		if ( context.IsLastLevel() )

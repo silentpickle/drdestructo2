@@ -1,12 +1,19 @@
 #include "stdafx.h"
 #include "AllegroSystem5.h"
 #include "LogCommon.h"
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
 
 bool AllegroSystem5::Init( const char *appName, const char *logFile )
 {
 	al_set_app_name( appName );
 
 	m_canWrite = false;
+
+#ifdef __EMSCRIPTEN__
+	setenv("ALLEGRO_TRACE_LEVEL", "warn", 0);
+#endif
 
 	if ( !al_init() )
 	{
@@ -35,6 +42,10 @@ bool AllegroSystem5::Init( const char *appName, const char *logFile )
 		}
 	}
 
+#ifdef __EMSCRIPTEN__
+    m_canWrite = true;
+    m_userPath = "/saves/";
+#else
 	ALLEGRO_FILE *testFile = al_fopen( "./testfile", "w" );
 
 	if ( testFile )
@@ -76,6 +87,8 @@ bool AllegroSystem5::Init( const char *appName, const char *logFile )
 
 		al_destroy_path( pUserPath );
 	}
+
+#endif
 
 	GetLog().StartLogger( logFile );
 
@@ -140,6 +153,10 @@ void AllegroSystem5::SaveConfig()
 
 	if ( !al_save_config_file( fullPath, m_config ) )
 		GetLog().Log( CommonLog(), LL_CRITICAL, "AllegroSystem: Failed to save config file %s", m_configName.c_str() );
+#ifdef __EMSCRIPTEN__
+    else
+        EM_ASM({ Module.saveProgress(); });
+#endif
 }
 
 void AllegroSystem5::LoadConfig()

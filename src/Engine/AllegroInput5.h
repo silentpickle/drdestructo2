@@ -1,5 +1,8 @@
 #pragma once
 #include "IInput.h"
+#ifdef __EMSCRIPTEN__
+#include <array>
+#endif
 
 // This struct contains state of a gamepad axis. The goal is to report any
 // axis movement only once, like it's a key press, so once an event is sent,
@@ -63,6 +66,18 @@ public:
 	  // Initializes Input with support for given devices
 	bool Init( bool keyboard, bool mouse, bool gamepad, bool touch );
 	
+#ifdef __EMSCRIPTEN__
+	void ResetKeyboard();
+	void SetWebAction(int action, bool down);
+	void QueueWebTap(float x, float y);
+
+private:
+	void UpdateWebActions();
+	std::array<int, 7> m_webKeys{};
+	std::vector<InputEvent> m_webEvents;
+public:
+#endif
+
 	  // Helper/debug function, will pause the game until a key is pressed
 	void WaitAnyKey();
 	

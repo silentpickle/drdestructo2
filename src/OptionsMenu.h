@@ -185,7 +185,9 @@ class MenuOptions : public GameMenu, public ButtonMenuEntry::ICallback
 	static const int EID_GAME_OPTIONS	= 4;
 	static const int EID_BACK			= 5;
 
+#ifndef __EMSCRIPTEN__
 	VerticalButtonEntry m_vidOptions;
+#endif
 	VerticalButtonEntry m_sndOptions;
 	VerticalButtonEntry m_ctrlOptions;
 	VerticalButtonEntry m_gameOptions;
@@ -197,7 +199,9 @@ public:
 	MenuOptions( int x, int y, IOptionsMenuCallback *pCallback )
 		: GameMenu( "Options", SCREEN_W/2 - 450/2, 120, 450, 460 )
 		, m_pCallback( pCallback )
+#ifndef __EMSCRIPTEN__
 		, m_vidOptions		( this, 1, "Video options",		EID_VID_OPTIONS,	this )
+#endif
 		, m_sndOptions		( this, 2, "Sound options",		EID_SND_OPTIONS,	this )
 		, m_ctrlOptions		( this, 3, "Control options",	EID_CTRL_OPTIONS,	this )
 		, m_gameOptions		( this, 4, "Gameplay options",	EID_GAME_OPTIONS,	this )

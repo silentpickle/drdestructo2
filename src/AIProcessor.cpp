@@ -7,6 +7,7 @@
 #include "ObjectsStorage.h"
 #include "Vars.h"
 
+#ifndef __EMSCRIPTEN__
 namespace
 {
 	UseIntVar CONTROL_TURN_UP("CONTROL_TURN_UP" );
@@ -106,6 +107,8 @@ void AIProcessor::RegisterFunctions( IAIState *pAIState )
 	];
 }
 
+#endif
+
 void AIProcessor::Update( float dt, ControlComponent & comp, IGameContext & context )
 {
 	if ( !comp.m_pState )
@@ -118,10 +121,7 @@ void AIProcessor::Update( float dt, ControlComponent & comp, IGameContext & cont
 	{
 		triggerOK = ( comp.m_pCurrentTrigger->Update( dt, comp ) >= 1.0f );
 		if ( triggerOK )
-		{
-			delete comp.m_pCurrentTrigger;
-			comp.m_pCurrentTrigger = 0;
-		}
+			comp.SetTrigger(nullptr);
 	}
 
 	  // Only resume execution if trigger is satisfied

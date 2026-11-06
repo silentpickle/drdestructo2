@@ -87,11 +87,10 @@ public:
 	SampleInstance()
 	{}
 
-	SampleInstance( const SampleInstance & other )
-	{
-		if ( this != &other )
-			m_sample.reset( other.m_sample );
-	}
+	SampleInstance(const SampleInstance &) = default;
+	SampleInstance(SampleInstance &&) noexcept = default;
+	SampleInstance & operator=(const SampleInstance &) = default;
+	SampleInstance & operator=(SampleInstance &&) noexcept = default;
 
 	~SampleInstance()
 	{

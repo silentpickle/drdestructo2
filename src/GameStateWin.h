@@ -57,7 +57,7 @@ class GameStateWin : public BaseGameState
 	void CheckAchievements( PlayerProfile & prof, const IGameContext & context );
 public:
 	GameStateWin()
-		: BaseGameState( GAMESTATE_WIN )
+		: BaseGameState( GAMESTATE_AFTER_LEVEL )
 	{
 		m_stage = STAGE_CLEAR;
 		m_speedY = 0;

@@ -111,7 +111,7 @@ void GameStateTutorial::Update( float dt, IGameContext & context )
 	if ( m_fadeTimer > 0.0f )
 	{
 		m_fadeTimer -= dt;
-		if ( m_fadeTimer < 0 )
+		if ( m_fadeTimer <= 0 )
 		{
 			m_fadeTimer = 0.0f;
 			if ( m_stage == STAGE_TITLE )
