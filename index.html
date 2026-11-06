@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Return of Dr. Destructo, a browser revival of the arcade flight game.">
+  <title>Return of Dr. Destructo</title>
+  <link rel="icon" href="favicon.ico">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #0b1621; color: #f3f0e7; font: 16px system-ui, sans-serif; }
+    main { width: min(100% - 24px, 1040px, 121vh); margin: 12px auto; }
+    .cabinet { position: relative; aspect-ratio: 4 / 3; background: #101f2c; border: 1px solid #3b566c; }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+    canvas:focus-visible { outline: 2px solid #eac96f; outline-offset: 2px; }
+    .overlay { position: absolute; inset: 0; display: grid; place-content: center; text-align: center;
+      padding: 24px; background: rgb(11 22 33 / .92); }
+    h1 { margin: 0 0 .3em; font-size: clamp(22px, 5vw, 54px); line-height: 1; }
+    p { margin: .55em 0; }
+    button { margin: .75em auto 0; padding: .65em 1.4em; border: 0; background: #eac96f; color: #101f2c;
+      font: inherit; font-weight: 750; cursor: pointer; }
+    #controls-toggle { margin: 0; padding: .2em .6em; }
+    #controls { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; margin-top: 8px; }
+    .pad { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+    .pad button { min-height: 46px; margin: 0; padding: .35em .15em; border: 1px solid #547085;
+      border-radius: 4px; background: #23394a; color: #f3f0e7; font-size: .85rem; touch-action: none;
+      user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+    .pad button:is(:active, [data-held], [aria-pressed="true"]) { background: #eac96f; color: #101f2c; }
+    @media (orientation: landscape) and (max-height: 500px) {
+      main { width: min(100% - 24px, 1050px); margin: 6px auto; }
+      .machine:has(#controls:not([hidden])) { display: grid; grid-template-columns: minmax(0, 4fr) minmax(150px, 2fr);
+        gap: 10px; align-items: center; }
+      .machine:has(#controls:not([hidden])) .cabinet { width: min(100%, 106vh); justify-self: end; }
+      #controls { grid-template-columns: 1fr; margin: 0; }
+    }
+    button:disabled { opacity: .55; cursor: progress; }
+    footer { display: flex; justify-content: space-between; gap: 8px 20px; flex-wrap: wrap;
+      padding-top: 9px; font-size: .85rem; }
+    a { color: #eac96f; }
+    #warning { color: #ffdb86; }
+    [hidden] { display: none !important; }
+  </style>
+  <script src="DrDestructo2.js" defer></script>
+  <script src="game.js" defer></script>
+</head>
+<body>
+  <main>
+    <div class="machine">
+      <div class="cabinet">
+        <canvas id="canvas" width="1024" height="768" tabindex="0" aria-label="Return of Dr. Destructo game"></canvas>
+        <div class="overlay" id="overlay">
+          <h1>Return of Dr. Destructo</h1>
+          <p id="status" role="status">Loading the game…</p>
+          <button id="play" type="button" disabled>Play</button>
+        </div>
+      </div>
+      <div id="controls" role="group" aria-label="On-screen flight controls" hidden>
+        <div class="pad">
+          <button type="button" data-action="0" aria-label="Turn left">←</button>
+          <button type="button" data-action="2">Boost</button>
+          <button type="button" data-action="1" aria-label="Turn right">→</button>
+          <button type="button" data-tap="5">Enter</button>
+          <button type="button" data-tap="6" aria-label="Escape, pause or skip">Esc</button>
+        </div>
+        <div class="pad">
+          <button type="button" data-action="3">Fire</button>
+          <button type="button" data-action="4">Bomb</button>
+          <button type="button" id="auto-fire" aria-pressed="false">Auto-fire</button>
+        </div>
+      </div>
+    </div>
+    <footer>
+      <button id="controls-toggle" type="button" aria-controls="controls" aria-expanded="false" hidden>Show controls</button>
+      <span>← / → Steer · ↑ Boost · Q Fire · A Bomb · Esc Pause</span>
+      <span><a href="licenses/CREDITS.txt">Credits</a> · <a href="licenses/LICENSE-ART.txt">Art license</a>
+        · <a href="licenses/LICENSE-CODE.txt">Code license</a></span>
+    </footer>
+    <p id="warning" role="status" hidden></p>
+  </main>
+</body>
+</html>

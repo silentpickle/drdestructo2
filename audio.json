@@ -1,0 +1,12 @@
+{
+  "Data/Music/Game Music - Brief.it": "audio/Game Music - Brief.mp3",
+  "Data/Music/Game Music - Win.it": "audio/Game Music - Win.mp3",
+  "Data/Music/Game music 1.it": "audio/Game music 1.mp3",
+  "Data/Music/Game music 2.it": "audio/Game music 2.mp3",
+  "Data/Sounds/engine1.ogg": "audio/engine1.wav",
+  "Data/Sounds/explosion.wav": "audio/explosion.wav",
+  "Data/Sounds/explosion2.ogg": "audio/explosion2.wav",
+  "Data/Sounds/explosion_player.ogg": "audio/explosion_player.wav",
+  "Data/Sounds/explosion_target.ogg": "audio/explosion_target.wav",
+  "Data/Sounds/player_gun.ogg": "audio/player_gun.wav"
+}
