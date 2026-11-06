@@ -1,5 +1,9 @@
 # Return of Dr. Destructo
 
+## Updated for the first time in years. It works much better now and plays in your browser!
+
+**[Play Return of Dr. Destructo](https://silentpickle.github.io/drdestructo2/)**
+
 Return of Dr. Destructo is a cross-platform, open-source remake of ZX Spectrum game "Island of Dr. Destructo" (1987).
 
 Binary downloads for the game could be found at: http://zxstudio.org/projects/drdestructo/
@@ -8,9 +12,9 @@ Source code for this game is licensed under MIT license and art is CC-BY-SA. Ple
 
 ## Browser edition
 
-[Play Return of Dr. Destructo on GitHub Pages](https://silentpickle.github.io/drdestructo2/).
-
 The web build uses the original C++ game, its 21 campaign levels, sprites, and Lua enemy scripts. Play with a keyboard, mouse, or the on-screen controls. Progress, high scores, and options are stored in the browser for each play URL.
+
+Emscripten compiles the C++ game and Lua interpreter to WebAssembly, so the browser runs the original game logic for flight, collisions, and enemy behavior. The game still draws through Allegro. Its OpenGL ES calls reach WebGL through Emscripten, and WebGL draws the sprites, effects, and menus on the canvas. JavaScript handles the page controls, Web Audio playback, and IndexedDB saves.
 
 Install CMake 3.24 or later, Ninja, Python 3.8 or later, FFmpeg with the LAME MP3 encoder, and OpenMPT's `openmpt123`. On macOS, these are available with `brew install cmake ninja python ffmpeg libopenmpt`. Install Emscripten 4.0.23 using the [official SDK](https://github.com/emscripten-core/emsdk).
 
