@@ -31,6 +31,7 @@ public:
 	{
 	}
 
+	void ProcessInput(IInput & input) override;
 	void RenderBefore( IRender & render, const IGameContext & context );
 	void RenderAfter( IRender & render, const IGameContext & context );
 	void Update( float dt, IGameContext & context );

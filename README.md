@@ -8,6 +8,8 @@ Source code for this game is licensed under MIT license and art is CC-BY-SA. Ple
 
 ## Browser edition
 
+[Play Return of Dr. Destructo on GitHub Pages](https://silentpickle.github.io/drdestructo2/).
+
 The web build uses the original C++ game, its 21 campaign levels, sprites, and Lua enemy scripts. Play with a keyboard, mouse, or the on-screen controls. Progress, high scores, and options are stored in the browser for each play URL.
 
 Install CMake 3.24 or later, Ninja, Python 3.8 or later, FFmpeg with the LAME MP3 encoder, and OpenMPT's `openmpt123`. On macOS, these are available with `brew install cmake ninja python ffmpeg libopenmpt`. Install Emscripten 4.0.23 using the [official SDK](https://github.com/emscripten-core/emsdk).
@@ -25,7 +27,9 @@ cmake --build build-web
 python3 -m http.server 8765 --bind 127.0.0.1 --directory dist
 ```
 
-Open [the local game](http://127.0.0.1:8765/) and click **Play**. Press Enter on the title screen. In flight, use the left and right arrows to turn, up to boost, Q to fire, A to drop a bomb, and Esc to pause. The game pauses when it loses focus. On a touch screen, use the on-screen buttons. With a mouse, click **Show controls** and turn on **Auto-fire** to shoot while steering.
+Open [the local game](http://127.0.0.1:8765/) and choose **Start**. Click or tap the title, press Enter, or use **Enter / Start** to open the menu. In flight, use the left and right arrows to turn, up to boost, Q to fire, A to drop a bomb, and Esc to pause.
+
+On a phone, turn it sideways to put the controls beside the game. With a mouse, click **Show controls**, then **Auto-fire** so you can shoot while holding a turn button. **Full screen** enlarges the cabinet in browsers that support it. The game pauses when it loses focus.
 
 The `dist/` directory is the complete static release. Serve it over HTTP(S) with `.wasm` mapped to `application/wasm`. The first build downloads checksum-pinned Allegro and Lua sources. The build renders the tracker files to MP3 and sound effects to WAV for Web Audio. The original tracker files stay in the repository.
 

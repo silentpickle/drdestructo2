@@ -19,20 +19,29 @@
     p { margin: .55em 0; }
     button { margin: .75em auto 0; padding: .65em 1.4em; border: 0; background: #eac96f; color: #101f2c;
       font: inherit; font-weight: 750; cursor: pointer; }
-    #controls-toggle { margin: 0; padding: .2em .6em; }
+    .display-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+    .display-actions button { margin: 0; padding: .2em .6em; }
+    #rotate-hint { display: none; }
+    @media (orientation: portrait) and (any-pointer: coarse) {
+      #rotate-hint { display: inline; }
+    }
     #controls { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; margin-top: 8px; }
     .pad { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
     .pad button { min-height: 46px; margin: 0; padding: .35em .15em; border: 1px solid #547085;
       border-radius: 4px; background: #23394a; color: #f3f0e7; font-size: .85rem; touch-action: none;
       user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
     .pad button:is(:active, [data-held], [aria-pressed="true"]) { background: #eac96f; color: #101f2c; }
-    @media (orientation: landscape) and (max-height: 500px) {
-      main { width: min(100% - 24px, 1050px); margin: 6px auto; }
-      .machine:has(#controls:not([hidden])) { display: grid; grid-template-columns: minmax(0, 4fr) minmax(150px, 2fr);
-        gap: 10px; align-items: center; }
-      .machine:has(#controls:not([hidden])) .cabinet { width: min(100%, 106vh); justify-self: end; }
+    @media (orientation: landscape) {
+      main:has(#controls:not([hidden])) { width: min(100% - 24px, 1280px); }
+      .machine:has(#controls:not([hidden])) { display: grid;
+        grid-template-columns: minmax(0, 1fr) clamp(150px, 25%, 240px); gap: 12px; align-items: center; }
+      .machine:has(#controls:not([hidden])) .cabinet { width: min(100%, 108dvh); justify-self: center; }
       #controls { grid-template-columns: 1fr; margin: 0; }
     }
+    main:fullscreen { margin: 0; padding: 12px; display: flex; flex-direction: column;
+      justify-content: center; background: #0b1621; overflow: auto; }
+    main:fullscreen .machine, main:fullscreen footer { width: min(100%, 1560px); margin-inline: auto; }
+    main:fullscreen .cabinet { width: min(100%, 116dvh); margin-inline: auto; }
     button:disabled { opacity: .55; cursor: progress; }
     footer { display: flex; justify-content: space-between; gap: 8px 20px; flex-wrap: wrap;
       padding-top: 9px; font-size: .85rem; }
@@ -51,7 +60,7 @@
         <div class="overlay" id="overlay">
           <h1>Return of Dr. Destructo</h1>
           <p id="status" role="status">Loading the game…</p>
-          <button id="play" type="button" disabled>Play</button>
+          <button id="play" type="button" disabled>Start</button>
         </div>
       </div>
       <div id="controls" role="group" aria-label="On-screen flight controls" hidden>
@@ -59,7 +68,7 @@
           <button type="button" data-action="0" aria-label="Turn left">←</button>
           <button type="button" data-action="2">Boost</button>
           <button type="button" data-action="1" aria-label="Turn right">→</button>
-          <button type="button" data-tap="5">Enter</button>
+          <button type="button" data-tap="5">Enter / Start</button>
           <button type="button" data-tap="6" aria-label="Escape, pause or skip">Esc</button>
         </div>
         <div class="pad">
@@ -70,7 +79,11 @@
       </div>
     </div>
     <footer>
-      <button id="controls-toggle" type="button" aria-controls="controls" aria-expanded="false" hidden>Show controls</button>
+      <div class="display-actions">
+        <button id="controls-toggle" type="button" aria-controls="controls" aria-expanded="false" hidden>Show controls</button>
+        <button id="fullscreen" type="button" aria-pressed="false" hidden>Full screen</button>
+      </div>
+      <span id="rotate-hint">Turn your phone sideways for a wider view.</span>
       <span>← / → Steer · ↑ Boost · Q Fire · A Bomb · Esc Pause</span>
       <span><a href="licenses/CREDITS.txt">Credits</a> · <a href="licenses/LICENSE-ART.txt">Art license</a>
         · <a href="licenses/LICENSE-CODE.txt">Code license</a></span>

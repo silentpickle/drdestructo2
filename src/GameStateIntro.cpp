@@ -8,6 +8,22 @@
 
 const float FADE_TIME = 1.0f;
 
+void GameStateIntro::ProcessInput(IInput & input)
+{
+    BaseGameState::ProcessInput(input);
+    input.BeginRead();
+    for (auto event = input.GetEvent(); event.m_type != InputEvent::EV_INVALID; event = input.GetEvent())
+    {
+        if (event.m_type == InputEvent::EV_MOUSE && event.m_mouseEvent.m_type == MouseEvent::MOUSE_B1_UP)
+        {
+            GoToMenu(event);
+            input.PopEvent();
+            return;
+        }
+        input.NextEvent();
+    }
+}
+
 void GameStateIntro::RenderBefore( IRender & render, const IGameContext & context )
 {
 	if ( !m_image.IsValid() )
@@ -17,7 +33,7 @@ void GameStateIntro::RenderBefore( IRender & render, const IGameContext & contex
 	int c = 100 + 155 * (cosf(3*m_flash) + 1.0f)/2.0f;
 	if ( c > 255 )
 		c = 255;
-	render.DrawAlignedText( SCREEN_W/2, SCREEN_H - 40, Color(c,c,c), 20, TEXT_ALIGN_CENTER, "Press Enter" );
+	render.DrawAlignedText( SCREEN_W/2, SCREEN_H - 40, Color(c,c,c), 20, TEXT_ALIGN_CENTER, "Click, tap, or press Enter" );
 
 	if ( m_fade )
 	{
