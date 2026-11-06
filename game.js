@@ -1,6 +1,8 @@
 "use strict";
 
+const cabinet = document.querySelector("main");
 const canvas = document.querySelector("#canvas");
+const fullscreen = document.querySelector("#fullscreen");
 const overlay = document.querySelector("#overlay");
 const status = document.querySelector("#status");
 const play = document.querySelector("#play");
@@ -54,6 +56,21 @@ function tapAction(action) {
 }
 
 controlsToggle.addEventListener("click", () => showControls(controls.hidden));
+fullscreen.hidden = !document.fullscreenEnabled;
+fullscreen.addEventListener("click", async () => {
+    try {
+        if (document.fullscreenElement === cabinet) await document.exitFullscreen();
+        else await cabinet.requestFullscreen();
+    } catch (error) {
+        console.warn("Destructo full screen:", error);
+        warn("fullscreen", "Full screen is unavailable in this browser window.");
+    }
+});
+document.addEventListener("fullscreenchange", () => {
+    const expanded = document.fullscreenElement === cabinet;
+    fullscreen.textContent = expanded ? "Exit full screen" : "Full screen";
+    fullscreen.setAttribute("aria-pressed", String(expanded));
+});
 autoFireButton.addEventListener("click", () => {
     if (!started || paused) return;
     autoFire = !autoFire;
@@ -292,9 +309,18 @@ play.onclick = () => {
     }
 };
 
+document.addEventListener("keydown", event => {
+    if (event.key === "Enter" && !started && !play.disabled &&
+        !event.target.closest("button, a, input, textarea, select"))
+    {
+        event.preventDefault();
+        play.click();
+    }
+});
 window.addEventListener("blur", pauseGame);
 canvas.addEventListener("blur", event => {
-    if (event.relatedTarget && !controls.contains(event.relatedTarget) && event.relatedTarget !== controlsToggle)
+    if (event.relatedTarget && !controls.contains(event.relatedTarget) &&
+        event.relatedTarget !== controlsToggle && event.relatedTarget !== fullscreen)
         pauseGame();
 });
 document.addEventListener("visibilitychange", () => {
